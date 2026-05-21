@@ -37,7 +37,7 @@ export interface JournalEntry {
   credits: JournalLeg[]; // 貸方 list
 }
 
-export type IndustryType = 'SaaS' | 'Construction';
+export type IndustryType = 'SaaS' | 'Construction' | 'F&B';
 
 export interface GameState {
   month: number;

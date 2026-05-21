@@ -32,7 +32,8 @@ import {
   UserPlus,
   UserMinus,
   Home,
-  ArrowDownRight
+  ArrowDownRight,
+  Utensils
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -113,7 +114,7 @@ export default function App() {
     document.body.appendChild(script);
   }, []);
 
-  // AI CFO States
+  // CFO Expert States
   const [cfoReport, setCfoReport] = useState<CFOReport | null>(null);
   const [cfoLoading, setCfoLoading] = useState(false);
   const [cfoError, setCfoError] = useState(false);
@@ -198,10 +199,17 @@ export default function App() {
     if (!companyName.trim()) return;
 
     setIsPlaying(true);
-    let initialCapital = industry === 'SaaS' ? 500000 : 1200000;
+    let initialCapital = 500000; // Default
+    if (industry === 'SaaS') initialCapital = 500000;
+    else if (industry === 'Construction') initialCapital = 1200000;
+    else if (industry === 'F&B') initialCapital = 300000;
     
     // Seed headcount, macro conditions, and personal finance
-    setHeadcount(industry === 'SaaS' ? 10 : 30);
+    let initialHeadcount = 10;
+    if (industry === 'SaaS') initialHeadcount = 10;
+    else if (industry === 'Construction') initialHeadcount = 30;
+    else if (industry === 'F&B') initialHeadcount = 8;
+    setHeadcount(initialHeadcount);
     setMarketStatus('Stagnant');
     setStockIndex(16500);
     setBtcPrice(64200);
@@ -255,7 +263,7 @@ export default function App() {
     setSnapshots([initialSnapshot]);
 
     // Fetch initial onboarding CFO analysis
-    requestCFOAdvice(seedAccounts, [initEvent], 1, null, industry);
+    requestCFOAdvice(seedAccounts, [initEvent], 1, industry);
   };
 
   // Run next monthly cycle
@@ -393,11 +401,8 @@ export default function App() {
     setSelectedAdviceIndex(null);
     setExecutedAdviceIds([]);
 
-    // Prepare previous snapshot comparison
-    const previousSummary = snapshots[snapshots.length - 1] || null;
-
-    // Trigger AI CFO reporting
-    requestCFOAdvice(currentAccountsState, processedEvents, nextMonthNum, previousSummary, industry);
+    // Trigger CFO reporting
+    requestCFOAdvice(currentAccountsState, processedEvents, nextMonthNum, industry);
   };
 
   // 1. CFO personal invest as Equity
@@ -503,53 +508,27 @@ export default function App() {
     }
   };
 
-  // Call server proxy for Gemini AI CFO Remarks
-  const requestCFOAdvice = async (
+  // Call heuristic CFO engine for Remarks
+  const requestCFOAdvice = (
     currentAccounts: Account[],
     monthlyEvts: BusinessEvent[],
     monthNum: number,
-    prevSummary: any,
     ind: IndustryType
   ) => {
     setCfoLoading(true);
-    setCfoError(false);
-
-    const inc = calculateIncomeStatement(currentAccounts);
-    const bs = calculateBalanceSheet(currentAccounts);
-
-    try {
-      const response = await fetch('/api/cfo-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          industry: ind,
-          companyName: companyName,
-          currentMonth: monthNum,
-          incomeStatement: inc,
-          balanceSheet: bs,
-          events: monthlyEvts,
-          previousSummary: prevSummary
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("HTTP error on AI CFO response");
+    
+    // Simulate a short processing delay for better UX
+    setTimeout(() => {
+      try {
+        const report = generateHeuristicCFOReport(ind, monthNum, currentAccounts, monthlyEvts);
+        setCfoReport(report);
+      } catch (e) {
+        console.error("Failed to generate CFO report:", e);
+        setCfoError(true);
+      } finally {
+        setCfoLoading(false);
       }
-
-      const report: CFOReport = await response.json();
-      setCfoReport(report);
-    } catch (e) {
-      console.error("Failed to query AI CFO route:", e);
-      // Fallback to local heuristic logic if API is unavailable (e.g., on GitHub Pages)
-      const fallbackReport = generateHeuristicCFOReport(ind, monthNum, currentAccounts, monthlyEvts);
-      setCfoReport({
-        ...fallbackReport,
-        summary: `[系統應急報告] ${fallbackReport.summary}`
-      });
-      setCfoError(true);
-    } finally {
-      setCfoLoading(false);
-    }
+    }, 800);
   };
 
   // Perform dynamic strategic CFO de-escalation actions
@@ -711,7 +690,7 @@ export default function App() {
           <div className="w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
           <div>
             <h1 className="text-sm font-bold tracking-tight text-white uppercase flex items-center gap-2">
-              AI CFO 財務模擬戰情室 <span className="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.5 rounded font-mono">V1.0 High-Density</span>
+              CFO 智慧戰情室 <span className="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.5 rounded font-mono">V1.0 Expert Edition</span>
               <span className="flex items-center gap-2 ml-4 text-[10px] font-mono text-slate-500 lowercase border-l border-slate-800 pl-4">
                 <span id="busuanzi_container_site_pv">pv: <b id="busuanzi_value_site_pv">...</b></span>
                 <span id="busuanzi_container_site_uv">uv: <b id="busuanzi_value_site_uv">...</b></span>
@@ -758,7 +737,7 @@ export default function App() {
                     現代商業財務決策戰情室
                   </h2>
                   <p className="text-slate-400 text-xs max-w-md mx-auto leading-relaxed">
-                    體驗真實複式簿記引擎！擔任臨時 CFO，面對 SaaS 訂閱或營建重資產行業，應對市場巨幅波動，配合 Gemini AI 財務大師進行危機破局。
+                    體驗真實複式簿記引擎！擔任臨時 CFO，面對 SaaS 訂閱或營建重資產行業，應對市場巨幅波動，配合專家智慧財務系統進行危機破局。
                   </p>
                 </div>
 
@@ -820,6 +799,33 @@ export default function App() {
                         <span className="text-amber-500 font-bold">高槓桿</span>
                       </div>
                     </div>
+
+                    {/* F&B Option */}
+                    <div
+                      onClick={() => setIndustry('F&B')}
+                      className={`relative p-4 rounded border transition-all duration-150 cursor-pointer flex flex-col justify-between h-40 ${
+                        industry === 'F&B'
+                          ? 'border-cyan-500 bg-cyan-950/20 shadow-md'
+                          : 'border-slate-800 bg-slate-900/30 hover:border-slate-700 hover:bg-slate-900/50'
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono uppercase font-bold leading-none ${industry === 'F&B' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' : 'bg-slate-800 text-slate-500'}`}>
+                            F&B (RESTAURANT)
+                          </span>
+                          <Utensils className={`w-4 h-4 ${industry === 'F&B' ? 'text-cyan-400' : 'text-slate-500'}`} />
+                        </div>
+                        <h3 className="text-xs font-bold text-white">精緻連鎖餐飲</h3>
+                        <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
+                          低單價、高頻次交易、現金流周轉極快。面臨租金壓力與嚴格的衛生食安考驗。
+                        </p>
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-500 flex justify-between items-center pt-2 border-t border-slate-800">
+                        <span>創始資本: $300,000</span>
+                        <span className="text-emerald-400 font-bold">高流動</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -842,7 +848,7 @@ export default function App() {
               >
                 <div className="space-y-1">
                   <h2 className="text-md font-bold text-white uppercase tracking-tight">設定企業名稱 (CONFIGURATION)</h2>
-                  <p className="text-slate-500 text-[11px]">AI CFO 要求所有合規財務主體必須命名以確保複式總帳正確登錄。</p>
+                  <p className="text-slate-500 text-[11px]">智慧系統要求所有合規財務主體必須命名以確保複式總帳正確登錄。</p>
                 </div>
 
                 <div className="space-y-3 font-mono">
@@ -865,7 +871,7 @@ export default function App() {
                     <ul className="list-disc pl-4 space-y-1">
                       <li>以「月」為會計結帳週期。點擊進度鈕將自動認列每月損益並記入主營業務。</li>
                       <li>系統背後是由一套標準實時<b>複式記帳引擎</b>（Double-entry Bookkeeping）驅動。</li>
-                      <li>每月的最新會計餘額表會加密安全地傳輸至 AI 戰情室，評估資產品質。</li>
+                      <li>每月的最新會計餘額表會自動傳送至專家戰情室，評估資產品質。</li>
                     </ul>
                   </div>
                 </div>
@@ -920,7 +926,7 @@ export default function App() {
                       </h3>
                     </div>
                     <span className="inline-flex px-1.5 py-0.5 text-[9px] font-bold font-mono rounded uppercase bg-cyan-950 border border-cyan-800 text-cyan-400 leading-none">
-                      {industry === 'SaaS' ? 'SaaS ACCRUAL' : 'CONTRACTOR HEAVY'}
+                      {industry === 'SaaS' ? 'SaaS ACCRUAL' : industry === 'Construction' ? 'CONTRACTOR HEAVY' : 'F&B RETAIL'}
                     </span>
                   </div>
 
@@ -951,7 +957,9 @@ export default function App() {
                   <div>
                     <span className="text-[10px] uppercase text-slate-500 font-bold mb-1.5 block tracking-widest font-mono">Sector Active</span>
                     <div className="bg-slate-900 border border-slate-800 p-2.5 rounded">
-                      <div className="text-cyan-400 font-bold text-[11px] uppercase font-mono">{industry === 'SaaS' ? 'SaaS (LIGHT PLATFORM)' : 'CONSTRUCTION (HEAVY)'}</div>
+                      <div className="text-cyan-400 font-bold text-[11px] uppercase font-mono">
+                        {industry === 'SaaS' ? 'SaaS (LIGHT PLATFORM)' : industry === 'Construction' ? 'CONSTRUCTION (HEAVY)' : 'F&B (RESTAURANT)'}
+                      </div>
                       <div className="text-[9px] text-slate-500 font-mono mt-0.5">Cycle: Project Cycle M{month < 10 ? '0' + month : month} / Accrual Basis</div>
                     </div>
                   </div>
@@ -1088,7 +1096,7 @@ export default function App() {
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>AI CFO DIAGNOSIS</span>
+                  <span>CFO 專家診斷</span>
                 </button>
 
                 <button
@@ -1145,7 +1153,7 @@ export default function App() {
               <div className="bg-slate-950 border border-slate-800 rounded p-4 min-h-[460px] relative overflow-hidden">
                 <AnimatePresence mode="wait">
                   
-                  {/* TAB 1: AI CFO Diagnostic Center */}
+                  {/* TAB 1: CFO Expert Diagnostic Center */}
                   {activeTab === 'cfo' && (
                     <motion.div
                       key="cfo-tab"
@@ -1158,7 +1166,7 @@ export default function App() {
                       <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                         <div className="flex items-center space-x-2 text-slate-300 font-bold">
                           <Sparkles className="w-4 h-4 text-teal-400" />
-                          <span>AI CFO 智慧財務決策室</span>
+                          <span>CFO 專家智慧財務決策室</span>
                         </div>
 
                         {cfoReport && (
@@ -1188,8 +1196,8 @@ export default function App() {
                         <div className="py-20 flex flex-col items-center justify-center space-y-4">
                           <div className="w-10 h-10 rounded-full border-2 border-teal-500 border-t-transparent animate-spin" />
                           <div className="text-center space-y-1">
-                            <p className="text-sm font-mono text-slate-300">AI 財務長正在深度核對總帳記帳與分錄對稱...</p>
-                            <p className="text-xs text-slate-500 leading-none">正在利用 Gemini 3.5 分析毛利率健康因子</p>
+                            <p className="text-sm font-mono text-slate-300">專家系統正在核對總帳分錄與現金流...</p>
+                            <p className="text-xs text-slate-500 leading-none">正在計算毛利率與風險因子</p>
                           </div>
                         </div>
                       )}
@@ -1211,7 +1219,7 @@ export default function App() {
                           <div className="space-y-3">
                             <div className="flex justify-between items-center">
                               <span className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wider block">
-                                AI CFO 務實營運改善提案（請點擊下方任一方針以選定並執行戰略決策）
+                                CFO 專家營運改善建議（請點擊下方方針以執行決策）
                               </span>
                               {selectedAdviceIndex !== null && (
                                 <button
@@ -1377,7 +1385,7 @@ export default function App() {
                       {cfoError && (
                         <div className="p-4 rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 text-xs flex items-center space-x-2">
                           <AlertCircle className="w-4 h-4 shrink-0" />
-                          <span>AI 分析傳輸逾時，已為您自動載入本地 CFO 財務對策邏輯。</span>
+                          <span>專家診斷系統暫時無法處理當前財報數據。</span>
                         </div>
                       )}
                     </motion.div>

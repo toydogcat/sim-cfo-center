@@ -4,9 +4,9 @@
  */
 
 import { BusinessEvent, IndustryType } from './types';
+import { RANDOM_EVENTS, RandomEventTemplate } from './eventConfig';
 
 function createDateStr(month: number, day: number): string {
-  // Assuming simulation starts in 2026. Month 1 is Jan 2026, Month 12 is Dec 2026 etc.
   const startYear = 2026;
   const totalMonths = month - 1;
   const yearIdx = startYear + Math.floor(totalMonths / 12);
@@ -16,7 +16,6 @@ function createDateStr(month: number, day: number): string {
   return `${yearIdx}-${monthStr}-${dayStr}`;
 }
 
-// Generate unique sequential event IDs
 let eventCounter = 1000;
 function uniqueId(prefix: string): string {
   eventCounter++;
@@ -26,19 +25,18 @@ function uniqueId(prefix: string): string {
 export function generateMonthlyEvents(
   industry: IndustryType,
   currentMonth: number,
-  saasGrowthFactor: number, // Starts at 1.0, increases with subscription blooms
-  salaryMultiplier: number, // Multiplier based on poaching and union decisions
+  saasGrowthFactor: number,
+  salaryMultiplier: number,
   headcount: number,
   marketStatus: 'Bull' | 'Stagnant' | 'Bear'
 ): { events: BusinessEvent[]; randomEventOccurrence: string | null } {
   const events: BusinessEvent[] = [];
   let randomEventOccurrence: string | null = null;
 
-  // Market multipliers
   const marketRevMultiplier = marketStatus === 'Bull' ? 1.25 : marketStatus === 'Bear' ? 0.75 : 1.0;
 
   if (industry === 'SaaS') {
-    // 1. Regular Salaries on 5th
+    // 1. Regular Salaries
     const RD_salary = Math.round(headcount * 18000 * salaryMultiplier);
     events.push({
       id: uniqueId('SAAS_PAY'),
@@ -50,21 +48,20 @@ export function generateMonthlyEvents(
       category: '薪資支出'
     });
 
-    // 2. Continuous Cloud server invoice on 10th
-    const serverFee = 25000;
+    // 2. Cloud server invoice
+    const serverFee = 25000 + (headcount > 15 ? (headcount - 15) * 2000 : 0);
     events.push({
       id: uniqueId('SAAS_SRV'),
       date: createDateStr(currentMonth, 10),
-      description: "AWS & GCP 大中型主機及高防護 CDN 託管費",
+      description: "AWS & GCP 大中型主機及高防護 CDN 託管費 (隨規模動態調整)",
       amount: serverFee,
       eventType: 'Purchase',
       industrySpecific: true,
       category: '雲端主機與伺服器'
     });
 
-    // 3. Subscription Revenue (SaaS Subscriptions) on 28th
-    // Base is 150000. It increases by 3-8% compound growth + growthFactor
-    const pct = 1 + 0.03 + (Math.random() * 0.05); // 3-8% monthly trend
+    // 3. Subscription Revenue
+    const pct = 1 + 0.03 + (Math.random() * 0.05);
     const manpowerFactor = 0.6 + 0.4 * (headcount / 10);
     const baseRevenue = Math.round(150000 * Math.pow(pct, currentMonth - 1) * saasGrowthFactor * manpowerFactor * marketRevMultiplier);
     
@@ -77,63 +74,18 @@ export function generateMonthlyEvents(
       industrySpecific: true,
       category: '平台訂閱收入'
     });
-
-    // 4. Random Events (occurrence probability: 45%)
-    const rng = Math.random();
-    if (rng < 0.45) {
-      if (rng < 0.15) {
-        // Red Code Event: Server blackout damages
-        randomEventOccurrence = "Server_Outage";
-        events.push({
-          id: uniqueId('SAAS_EVT'),
-          date: createDateStr(currentMonth, 18),
-          description: "【重大事故】亞太數據中心骨幹網路大斷線，補償客戶損失與退款",
-          amount: 80000,
-          eventType: 'Random',
-          industrySpecific: true,
-          category: '營業外賠償'
-        });
-      } else if (rng < 0.30) {
-        // Talent crisis: competitor poaching
-        randomEventOccurrence = "Talent_Poaching";
-        events.push({
-          id: uniqueId('SAAS_EVT'),
-          date: createDateStr(currentMonth, 15),
-          description: "【外部競爭】外部競品以高薪向本公司研發骨幹挖角，核心團隊需提發激勵獎金",
-          amount: 40005,
-          eventType: 'Random',
-          industrySpecific: true,
-          category: '人才防護獎勵'
-        });
-      } else {
-        // Subscription Boom!
-        randomEventOccurrence = "Sub_Boom";
-        events.push({
-          id: uniqueId('SAAS_EVT'),
-          date: createDateStr(currentMonth, 25),
-          description: "【爆紅效應】產品榮獲 Product Hunt 當日推選第一名，企業客戶大湧入一筆巨額預存",
-          amount: 120000,
-          eventType: 'Random',
-          industrySpecific: true,
-          category: '加值訂閱款'
-        });
-      }
-    }
-  } else {
-    // CONSTRUCTION (營建業)
-    // 1. Regular materials purchase on 8th (fixed high expense)
-    const baseMaterial = 300000;
-    events.push({
+    } else if (industry === 'Construction') {
+    // CONSTRUCTION
+    const baseMaterial = 300000 + (headcount > 30 ? (headcount - 30) * 5000 : 0);    events.push({
       id: uniqueId('CONS_PUR'),
       date: createDateStr(currentMonth, 8),
-      description: "向預拌混凝土與鋼筋經銷商採購土建工程物料",
+      description: "向預拌混凝土與鋼筋經銷商採購土建工程物料 (隨人力規模擴大)",
       amount: baseMaterial,
       eventType: 'Purchase',
       industrySpecific: true,
       category: '營建材料採購'
     });
 
-    // 2. Subcontractor payroll on 15th (salaries)
     const subSalary = Math.round(headcount * 4000);
     events.push({
       id: uniqueId('CONS_PAY'),
@@ -145,22 +97,18 @@ export function generateMonthlyEvents(
       category: '薪資支出'
     });
 
-    // 3. Equipment lease on 20th
-    const eqpFee = 40000;
+    const eqpFee = 40000 + (headcount > 40 ? 20000 : 0);
     events.push({
       id: uniqueId('CONS_EQP'),
       date: createDateStr(currentMonth, 20),
-      description: "租賃高壓吊車及重型挖掘設備費用",
+      description: "租賃高壓吊車及重型挖掘設備費用 (隨工期規模調整)",
       amount: eqpFee,
       eventType: 'Purchase',
       industrySpecific: true,
       category: '生財設備租用'
     });
 
-    // 4. Milestone invoice payment loop (billed every 3rd month or based on probability)
-    // Every 3rd month is a solid milestone.
-    // e.g., month = 3, 6, 9 etc, or a 20% random speed chance in other months
-    const isMilestoneCleared = (currentMonth % 3 === 0) || (Math.random() < 0.20 && currentMonth > 1);
+    const isMilestoneCleared = (currentMonth % 3 === 0) || (Math.random() < 0.25 && currentMonth > 1);
     if (isMilestoneCleared) {
       const constMarketMultiplier = marketStatus === 'Bull' ? 1.20 : marketStatus === 'Bear' ? 0.80 : 1.0;
       const manpowerFactor = 0.5 + 0.5 * (headcount / 30);
@@ -175,60 +123,80 @@ export function generateMonthlyEvents(
         category: '工程進度款請撥'
       });
     }
+  } else if (industry === 'F&B') {
+    // F&B (餐飲業)
+    // 1. Rent on 1st
+    const rentFee = 80000;
+    events.push({
+      id: uniqueId('FB_RENT'),
+      date: createDateStr(currentMonth, 1),
+      description: "商業地段店面月租金與物業管理費",
+      amount: rentFee,
+      eventType: 'Purchase',
+      industrySpecific: true,
+      category: '營業外支出'
+    });
 
-    // 5. Random Events (chance: 50%)
-    const rng = Math.random();
-    if (rng < 0.50) {
-      if (rng < 0.15) {
-        // Steel/Cement cost spike
-        randomEventOccurrence = "Cost_Spike";
-        events.push({
-          id: uniqueId('CONS_EVT'),
-          date: createDateStr(currentMonth, 12),
-          description: "【成本攀升】國際鋼鐵與砂石原物料巨幅上漲，造成材料採購追加合約差額",
-          amount: 150000,
-          eventType: 'Purchase',
-          industrySpecific: true,
-          category: '營建材料採購'
-        });
-      } else if (rng < 0.30) {
-        // Site delay fine/penalty
-        randomEventOccurrence = "Project_Delay";
-        events.push({
-          id: uniqueId('CONS_EVT'),
-          date: createDateStr(currentMonth, 17),
-          description: "【工期落後】因連續梅雨與出土阻礙，工期進度落後遭市府開罰與罰金補償",
-          amount: 90000,
-          eventType: 'Random',
-          industrySpecific: true,
-          category: '罰款支出'
-        });
-      } else if (rng < 0.45) {
-        // Workplace Safety Disaster! High losses
-        randomEventOccurrence = "Safety_Event";
-        events.push({
-          id: uniqueId('CONS_EVT'),
-          date: createDateStr(currentMonth, 14),
-          description: "【工安事件】工地發生重物墜落砸毀停放車輛與受傷，暫時勒令停工整頓並賠償",
-          amount: 220000,
-          eventType: 'Random',
-          industrySpecific: true,
-          category: '意外賠償損失'
-        });
-      } else if (rng < 0.50) {
-        // Overdue Receivables Paid: A nice lump sum cash infusion from accounts receivable!
-        randomEventOccurrence = "Collection_Receivable";
-        events.push({
-          id: uniqueId('CONS_EVT'),
-          date: createDateStr(currentMonth, 22),
-          description: "【帳款回收】向長期往來業主收回上期拖延之科技園區外牆工程保留款",
-          amount: 300000,
-          eventType: 'Sale', // mapped to Sale category '應收帳款請款' (Cash up, Receivables down)
-          industrySpecific: true,
-          category: '應收帳款請款'
-        });
-      }
-    }
+    // 2. Ingredients on 10th
+    const ingredientCost = Math.round(120000 * (1 + (Math.random() * 0.2 - 0.1))); // Variable cost
+    events.push({
+      id: uniqueId('FB_ING'),
+      date: createDateStr(currentMonth, 10),
+      description: "本月生鮮食材、乾貨及調味料採購款",
+      amount: ingredientCost,
+      eventType: 'Purchase',
+      industrySpecific: true,
+      category: '餐飲食材採購'
+    });
+
+    // 3. Salaries on 15th
+    const fbSalary = Math.round(headcount * 6000 * salaryMultiplier); // Lower base than SaaS
+    events.push({
+      id: uniqueId('FB_PAY'),
+      date: createDateStr(currentMonth, 15),
+      description: `外場服務員與內場廚師薪資發放 (編制人員: ${headcount} 人)`,
+      amount: fbSalary,
+      eventType: 'Payroll',
+      industrySpecific: false,
+      category: '薪資支出'
+    });
+
+    // 4. Revenue on 28th (Daily collection summed)
+    const fbMarketMultiplier = marketStatus === 'Bull' ? 1.30 : marketStatus === 'Bear' ? 0.70 : 1.0;
+    const manpowerFactor = 0.7 + 0.3 * (headcount / 15);
+    const baseFBRevenue = Math.round(450000 * manpowerFactor * fbMarketMultiplier);
+    
+    events.push({
+      id: uniqueId('FB_REV'),
+      date: createDateStr(currentMonth, 28),
+      description: `本月餐廳現場內用與外送總營業額認列 (服務戰力: ${(manpowerFactor * 100).toFixed(0)}%，景氣係數: ${marketStatus === 'Bull' ? '消費熱絡 🚀 (1.3x)' : marketStatus === 'Bear' ? '景氣蕭條 📉 (0.7x)' : '持平 ⚖️ (1.0x)'})`,
+      amount: baseFBRevenue,
+      eventType: 'Sale',
+      industrySpecific: true,
+      category: '餐飲銷售收入'
+    });
+  }
+
+  // --- Unified Config-Driven Random Events ---
+  const industryEvents = RANDOM_EVENTS.filter(e => e.industry === industry || e.industry === 'Both');
+  
+  // Try to trigger one random event based on probability
+  const rolledEvents = industryEvents.filter(e => Math.random() < e.probability);
+  
+  if (rolledEvents.length > 0) {
+    // If multiple rolled, pick one (or could pick all, but for gameplay balance we pick one)
+    const selected = rolledEvents[Math.floor(Math.random() * rolledEvents.length)];
+    
+    randomEventOccurrence = selected.id;
+    events.push({
+      id: uniqueId(`${industry.toUpperCase()}_EVT`),
+      date: createDateStr(currentMonth, 14 + Math.floor(Math.random() * 10)), // random day between 14-24
+      description: selected.description,
+      amount: selected.amount,
+      eventType: selected.eventType,
+      industrySpecific: true,
+      category: selected.category
+    });
   }
 
   return {
