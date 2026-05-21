@@ -175,8 +175,59 @@ export function generateMonthlyEvents(
       industrySpecific: true,
       category: '餐飲銷售收入'
     });
-  }
+    } else if (industry === 'Multisector') {
+    // MNC (跨國企業)
+    // 1. Global HQ Operations on 1st
+    const hqFee = 150000;
+    events.push({
+    id: uniqueId('MNC_HQ'),
+    date: createDateStr(currentMonth, 1),
+    description: "全球總部行政維運、品牌授權與法務規費",
+    amount: hqFee,
+    eventType: 'Purchase',
+    industrySpecific: true,
+    category: '營業外支出'
+    });
 
+    // 2. Global Logistics & Supply Chain on 10th
+    const logisticsCost = 100000 + (Math.random() * 50000);
+    events.push({
+    id: uniqueId('MNC_LOG'),
+    date: createDateStr(currentMonth, 10),
+    description: "跨國物流快遞與關稅預繳支出",
+    amount: logisticsCost,
+    eventType: 'Purchase',
+    industrySpecific: true,
+    category: '專業服務支出'
+    });
+
+    // 3. Subsidiary Payroll on 15th
+    const mncSalary = Math.round(headcount * 12000 * salaryMultiplier); 
+    events.push({
+    id: uniqueId('MNC_PAY'),
+    date: createDateStr(currentMonth, 15),
+    description: `全球各分支機構員工薪資發放 (編制人員: ${headcount} 人)`,
+    amount: mncSalary,
+    eventType: 'Payroll',
+    industrySpecific: false,
+    category: '薪資支出'
+    });
+
+    // 4. Global Consolidated Revenue on 28th
+    const mncMarketMultiplier = marketStatus === 'Bull' ? 1.40 : marketStatus === 'Bear' ? 0.60 : 1.0; // High beta
+    const manpowerFactor = 0.8 + 0.2 * (headcount / 20);
+    const baseMNCRevenue = Math.round(800000 * manpowerFactor * mncMarketMultiplier);
+
+    events.push({
+    id: uniqueId('MNC_REV'),
+    date: createDateStr(currentMonth, 28),
+    description: `跨國合併報表總營收認列 (全球規模因子: ${(manpowerFactor * 100).toFixed(0)}%，全球景氣Beta: ${marketStatus === 'Bull' ? '擴張紅利 🚀 (1.4x)' : marketStatus === 'Bear' ? '衰退衝擊 📉 (0.6x)' : '基準 ⚖️ (1.0x)'})`,
+    amount: baseMNCRevenue,
+    eventType: 'Sale',
+    industrySpecific: true,
+    category: '平台訂閱收入'
+    });
+    }
   // --- Unified Config-Driven Random Events ---
   const industryEvents = RANDOM_EVENTS.filter(e => e.industry === industry || e.industry === 'Both');
   

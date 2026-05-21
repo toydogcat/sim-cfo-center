@@ -33,7 +33,8 @@ import {
   UserMinus,
   Home,
   ArrowDownRight,
-  Utensils
+  Utensils,
+  Globe
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -203,12 +204,14 @@ export default function App() {
     if (industry === 'SaaS') initialCapital = 500000;
     else if (industry === 'Construction') initialCapital = 1200000;
     else if (industry === 'F&B') initialCapital = 300000;
+    else if (industry === 'Multisector') initialCapital = 2000000;
     
     // Seed headcount, macro conditions, and personal finance
     let initialHeadcount = 10;
     if (industry === 'SaaS') initialHeadcount = 10;
     else if (industry === 'Construction') initialHeadcount = 30;
     else if (industry === 'F&B') initialHeadcount = 8;
+    else if (industry === 'Multisector') initialHeadcount = 50;
     setHeadcount(initialHeadcount);
     setMarketStatus('Stagnant');
     setStockIndex(16500);
@@ -826,6 +829,33 @@ export default function App() {
                         <span className="text-emerald-400 font-bold">高流動</span>
                       </div>
                     </div>
+
+                    {/* MNC Option */}
+                    <div
+                      onClick={() => setIndustry('Multisector')}
+                      className={`relative p-4 rounded border transition-all duration-150 cursor-pointer flex flex-col justify-between h-40 ${
+                        industry === 'Multisector'
+                          ? 'border-cyan-500 bg-cyan-950/20 shadow-md'
+                          : 'border-slate-800 bg-slate-900/30 hover:border-slate-700 hover:bg-slate-900/50'
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono uppercase font-bold leading-none ${industry === 'Multisector' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' : 'bg-slate-800 text-slate-500'}`}>
+                            MNC (GLOBAL GROUP)
+                          </span>
+                          <Globe className={`w-4 h-4 ${industry === 'Multisector' ? 'text-cyan-400' : 'text-slate-500'}`} />
+                        </div>
+                        <h3 className="text-xs font-bold text-white">跨國綜合集團</h3>
+                        <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
+                          全球佈局、資產極重、受匯率與地緣政治波動影響最巨。擁有最強大的資本實力與最複雜的監管挑戰。
+                        </p>
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-500 flex justify-between items-center pt-2 border-t border-slate-800">
+                        <span>創始資本: $2,000,000</span>
+                        <span className="text-rose-400 font-bold">極高風險</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -926,7 +956,7 @@ export default function App() {
                       </h3>
                     </div>
                     <span className="inline-flex px-1.5 py-0.5 text-[9px] font-bold font-mono rounded uppercase bg-cyan-950 border border-cyan-800 text-cyan-400 leading-none">
-                      {industry === 'SaaS' ? 'SaaS ACCRUAL' : industry === 'Construction' ? 'CONTRACTOR HEAVY' : 'F&B RETAIL'}
+                      {industry === 'SaaS' ? 'SaaS ACCRUAL' : industry === 'Construction' ? 'CONTRACTOR HEAVY' : industry === 'F&B' ? 'F&B RETAIL' : 'MNC GLOBAL'}
                     </span>
                   </div>
 
@@ -958,7 +988,7 @@ export default function App() {
                     <span className="text-[10px] uppercase text-slate-500 font-bold mb-1.5 block tracking-widest font-mono">Sector Active</span>
                     <div className="bg-slate-900 border border-slate-800 p-2.5 rounded">
                       <div className="text-cyan-400 font-bold text-[11px] uppercase font-mono">
-                        {industry === 'SaaS' ? 'SaaS (LIGHT PLATFORM)' : industry === 'Construction' ? 'CONSTRUCTION (HEAVY)' : 'F&B (RESTAURANT)'}
+                        {industry === 'SaaS' ? 'SaaS (LIGHT PLATFORM)' : industry === 'Construction' ? 'CONSTRUCTION (HEAVY)' : industry === 'F&B' ? 'F&B (RESTAURANT)' : 'MNC (GLOBAL GROUP)'}
                       </div>
                       <div className="text-[9px] text-slate-500 font-mono mt-0.5">Cycle: Project Cycle M{month < 10 ? '0' + month : month} / Accrual Basis</div>
                     </div>

@@ -213,5 +213,288 @@ export const RANDOM_EVENTS: RandomEventTemplate[] = [
     category: '餐飲銷售收入',
     probability: 0.08,
     industry: 'F&B'
+  },
+
+  // --- Global Macro & Geopolitical Events (2024-2026 Trends) ---
+  {
+    id: "Global_Interest_Rate_Hike",
+    description: "【全球金融】聯準會為抑制通膨宣布放緩降息，全球借貸成本上升，導致利息支出增加",
+    amount: 50000,
+    eventType: 'Random',
+    category: '專業服務支出',
+    probability: 0.05,
+    industry: 'Both'
+  },
+  {
+    id: "Middle_East_Energy_Crisis",
+    description: "【中東局勢】因紅海航道局勢再度緊張，引發國際原油與天然氣波動，導致運輸與電費成本上升",
+    amount: 65000,
+    eventType: 'Purchase',
+    category: '營業外支出',
+    probability: 0.06,
+    industry: 'Both'
+  },
+  {
+    id: "AI_Chip_Scarcity",
+    description: "【科技戰】地緣政治引發高端 AI 晶片出口禁令，導致伺服器升級成本與 R&D 設備採購價暴漲",
+    amount: 120000,
+    eventType: 'Purchase',
+    category: '雲端主機與伺服器',
+    probability: 0.05,
+    industry: 'SaaS'
+  },
+  {
+    id: "AI_Productivity_Breakthrough",
+    description: "【技術紅利】公司成功導入生成式 AI 輔助開發流程，研發效率大幅提升，帶動新功能提前上線增收",
+    amount: 200000,
+    eventType: 'Sale',
+    category: '平台訂閱收入',
+    probability: 0.04,
+    industry: 'SaaS'
+  },
+  {
+    id: "Critical_Mineral_Shortage",
+    description: "【資源戰爭】電動車與基礎設施對銅、鋰等關鍵礦物需求過大，導致營建機電材料成本劇烈波動",
+    amount: 180000,
+    eventType: 'Purchase',
+    category: '營建材料採購',
+    probability: 0.06,
+    industry: 'Construction'
+  },
+  {
+    id: "Global_Supply_Chain_Choke",
+    description: "【供應鏈斷裂】因極端氣候導致巴拿馬運河限航，進口高級食材與特種建材到貨嚴重延誤",
+    amount: 100000,
+    eventType: 'Random',
+    category: '營業外損失',
+    probability: 0.05,
+    industry: 'Both'
+  },
+  {
+    id: "Labor_Strike_Social_Unrest",
+    description: "【社會動盪】因生活成本危機，多地發生大規模罷工行動，導致工程延誤與臨時雇工成本攀升",
+    amount: 150000,
+    eventType: 'Payroll',
+    category: '薪資支出',
+    probability: 0.04,
+    industry: 'Construction'
+  },
+  {
+    id: "Import_Food_Inflation",
+    description: "【地緣經濟】受貿易壁壘影響，進口原物料、咖啡豆與乳製品價格連鎖反應式上漲",
+    amount: 70000,
+    eventType: 'Purchase',
+    category: '餐飲食材採購',
+    probability: 0.07,
+    industry: 'F&B'
+  },
+  {
+    id: "Middle_East_AI_Hub_Investment",
+    description: "【主權基金】沙烏地阿拉伯與阿聯酋宣佈加碼 AI 基礎設施，公司獲選進入當地加速器並獲得專案預付款",
+    amount: 250000,
+    eventType: 'Sale',
+    category: '平台訂閱收入',
+    probability: 0.03,
+    industry: 'SaaS'
+  },
+  {
+    id: "AI_Hallucination_Legal_Case",
+    description: "【AI 法律風險】公司 LLM 模型產生嚴重事實幻覺，導致企業客戶決策失誤並提出集體訴訟賠償",
+    amount: 150000,
+    eventType: 'Random',
+    category: '營業外賠償',
+    probability: 0.04,
+    industry: 'SaaS'
+  },
+  {
+    id: "Deepfake_Financial_Fraud",
+    description: "【資安災難】財務部遭 Deepfake 語音詐騙，誤將一筆款項匯至境外非法帳戶，認列重大營業外損失",
+    amount: 200000,
+    eventType: 'Random',
+    category: '營業外損失',
+    probability: 0.02,
+    industry: 'Both'
+  },
+  {
+    id: "US_Manufacturing_Reshoring_Grants",
+    description: "【美國製造】美國政府撥款支持產業回流，公司因提供智慧製造方案獲得專項補貼與減稅額度",
+    amount: 180000,
+    eventType: 'Sale',
+    category: '平台訂閱收入',
+    probability: 0.04,
+    industry: 'SaaS'
+  },
+  {
+    id: "China_Export_Stimulus_Impact",
+    description: "【中國內捲】中國為應對國內需求不足加速外銷，導致市場充斥低價競爭設備，衝擊我方專案報價",
+    amount: 100000,
+    eventType: 'Random',
+    category: '營業外損失',
+    probability: 0.05,
+    industry: 'Construction'
+  },
+  {
+    id: "EU_AI_Act_Compliance",
+    description: "【歐洲監管】歐盟正式實施《人工智慧法案》(EU AI Act)，公司需支付高額法律顧問與技術合規審計費",
+    amount: 90000,
+    eventType: 'Purchase',
+    category: '專業服務支出',
+    probability: 0.05,
+    industry: 'SaaS'
+  },
+  {
+    id: "Global_Tariff_War_2",
+    description: "【關稅大戰】美國新任政府宣佈對全球進口機械與鋼鐵加徵 20% 關稅，導致材料與設備進口價齊漲",
+    amount: 130000,
+    eventType: 'Purchase',
+    category: '營建材料採購',
+    probability: 0.06,
+    industry: 'Construction'
+  },
+  {
+    id: "China_Stimulus_Infrastructure_Boom",
+    description: "【中國刺激】北京推出 3 兆元振興方案聚焦基礎設施，帶動全球工程物料價格上漲，採購成本增加",
+    amount: 110000,
+    eventType: 'Purchase',
+    category: '營建材料採購',
+    probability: 0.04,
+    industry: 'Construction'
+  },
+  {
+    id: "EU_China_Car_Investigation_Spillover",
+    description: "【中歐貿易戰】歐盟對中國電動車加徵關稅引發貿易報復，導致我方部分外銷歐洲零組件訂單縮減",
+    amount: 80000,
+    eventType: 'Random',
+    category: '營業外損失',
+    probability: 0.04,
+    industry: 'SaaS'
+  },
+  {
+    id: "US_Soft_Landing_Consumption_Boost",
+    description: "【美國軟著陸】美國景氣展現韌性且通膨趨緩，帶動高端餐飲消費信心回升，現場客單價顯著成長",
+    amount: 90000,
+    eventType: 'Sale',
+    category: '餐飲銷售收入',
+    probability: 0.05,
+    industry: 'F&B'
+  },
+  {
+    id: "China_Property_Market_Drag",
+    description: "【中國房市】中國房地產危機持續拖累亞洲建築材料需求，雖有利於採購價降低，但整體景氣趨於悲觀",
+    amount: 40000,
+    eventType: 'Sale', // Revenue increase due to lower costs or better terms
+    category: '應收帳款請撥',
+    probability: 0.04,
+    industry: 'Construction'
+    },
+    {
+    id: "Japan_Monetary_Normalization",
+    description: "【日本升息】日本銀行結束負利率政策，引發日圓匯率大幅波動，影響進口設備採購成本",
+    amount: 60000,
+    eventType: 'Purchase',
+    category: '專業服務支出',
+    probability: 0.05,
+    industry: 'Both'
+    },
+    {
+    id: "Korea_Semiconductor_Supercycle",
+    description: "【韓國半導體】AI 帶動高頻寬記憶體 (HBM) 需求爆發，相關設備供應鏈訂單激增，認列一筆技術服務收入",
+    amount: 220000,
+    eventType: 'Sale',
+    category: '平台訂閱收入',
+    probability: 0.04,
+    industry: 'SaaS'
+    },
+    {
+    id: "India_GCC_Expansion",
+    description: "【印度崛起】印度躍升全球服務中心 (GCC)，公司於當地設立研發分部獲得專項減稅與低廉人力成本紅利",
+    amount: 150000,
+    eventType: 'Sale',
+    category: '加值訂閱款',
+    probability: 0.05,
+    industry: 'SaaS'
+    },
+    {
+    id: "Vietnam_Supply_Chain_Boom",
+    description: "【越南製造】受供應鏈去風險化帶動，越南廠房擴建需求激增，我方承接之東南亞工業標案提前請款",
+    amount: 280000,
+    eventType: 'Sale',
+    category: '工程進度款請撥',
+    probability: 0.05,
+    industry: 'Construction'
+    },
+    {
+    id: "Japan_Tourism_Record_High",
+    description: "【日旅爆發】赴日旅遊人數創歷史新高，帶動公司於當地投資之餐飲品牌營收大幅超越預期",
+    amount: 120000,
+    eventType: 'Sale',
+    category: '餐飲銷售收入',
+    probability: 0.06,
+    industry: 'F&B'
+    },
+    {
+    id: "Thailand_Energy_Transition",
+    description: "【泰國綠能】泰國宣佈加速從煤炭轉向天然氣與綠能，相關基建工程需追加環保法規合規支出",
+    amount: 85000,
+    eventType: 'Purchase',
+    category: '專業服務支出',
+    probability: 0.04,
+    industry: 'Construction'
+    },
+    {
+    id: "India_Infrastructure_Push",
+    description: "【印度基建】新德里政府加碼國家基礎設施計畫，全球建材需求上升，導致鋼鐵與混凝土價格連鎖波動",
+    amount: 140000,
+    eventType: 'Purchase',
+    category: '營建材料採購',
+    probability: 0.05,
+    industry: 'Construction'
+    },
+
+  // --- MNC (Multisector) Events ---
+  {
+    id: "FX_Volatility_Loss",
+    description: "【匯率劇震】主要貿易貨幣（歐元/日圓）對美金劇烈貶值，認列鉅額匯兌損失",
+    amount: 140000,
+    eventType: 'Random',
+    category: '營業外損失',
+    probability: 0.09,
+    industry: 'Multisector'
+  },
+  {
+    id: "Global_Minimum_Tax",
+    description: "【全球稅改】OECD 全球最低稅負制實施，開曼與維京群島避稅優勢喪失，補繳跨國所得稅",
+    amount: 250000,
+    eventType: 'Random',
+    category: '專業服務支出',
+    probability: 0.04,
+    industry: 'Multisector'
+  },
+  {
+    id: "International_Trade_Award",
+    description: "【國際殊榮】獲頒 ESG 全球年度傑出企業，帶動多國主權基金加碼投資，資金成本大幅降低",
+    amount: 300000,
+    eventType: 'Sale',
+    category: '平台訂閱收入',
+    probability: 0.03,
+    industry: 'Multisector'
+  },
+  {
+    id: "Global_PR_Crisis",
+    description: "【公關災難】某國分公司涉及當地政治敏感議題，引發多國聯合抵制，海外銷售額單月重挫",
+    amount: 180000,
+    eventType: 'Random',
+    category: '營業外損失',
+    probability: 0.05,
+    industry: 'Multisector'
+  },
+  {
+    id: "Regional_Hq_Grant",
+    description: "【總部補貼】因將亞太總部設於新加坡，獲得當地政府研發經費返還與利息補貼",
+    amount: 150000,
+    eventType: 'Sale',
+    category: '加值訂閱款',
+    probability: 0.06,
+    industry: 'Multisector'
   }
 ];
