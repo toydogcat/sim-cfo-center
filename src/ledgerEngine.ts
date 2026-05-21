@@ -15,6 +15,7 @@ export const INITIAL_ACCOUNTS: Account[] = [
   { id: "2003", name: "股東往來與過橋融資", type: "Liability", balance: 0 },
   { id: "3001", name: "創始資本股本", type: "Equity", balance: 0 },
   { id: "3002", name: "CFO特別股增資", type: "Equity", balance: 0 },
+  { id: "3003", name: "累積盈餘", type: "Equity", balance: 0 },
   { id: "4001", name: "主營業務收入", type: "Revenue", balance: 0 },
   { id: "5001", name: "研發及人事薪資支出", type: "Expense", balance: 0 },
   { id: "5002", name: "營建材料等生長成本", type: "Expense", balance: 0 },
@@ -145,6 +146,10 @@ export function postBusinessEvent(
         // Server host purchase: server expense increases, Cash decreases
         addDebit("5003", amount);
         addCredit("1001", amount);
+      } else if (event.category === '股東分紅') {
+        // Dividend: Retained Earnings decreases, Cash decreases
+        addDebit("3003", amount);
+        addCredit("1001", amount);
       } else {
         // General Purchase
         addDebit("5004", amount);
@@ -213,6 +218,39 @@ export function postBusinessEvent(
   };
 }
 
+/**
+ * Period-end Closing Entries: 
+ * Resets Revenue and Expense accounts to zero and transfers net income to Retained Earnings (3003).
+ */
+export function performClosingEntries(accounts: Account[]): Account[] {
+  const inc = calculateIncomeStatement(accounts);
+  const netIncome = inc.netIncome;
+
+  if (netIncome === 0) return accounts.map(acc => ({ ...acc }));
+
+  const debits: JournalLeg[] = [];
+  const credits: JournalLeg[] = [];
+
+  // 1. Close Revenue accounts (Debit to decrease balance to zero)
+  accounts.filter(a => a.type === 'Revenue' && a.balance !== 0).forEach(a => {
+    debits.push({ accountId: a.id, accountName: a.name, amount: a.balance });
+  });
+
+  // 2. Close Expense accounts (Credit to decrease balance to zero)
+  accounts.filter(a => a.type === 'Expense' && a.balance !== 0).forEach(a => {
+    credits.push({ accountId: a.id, accountName: a.name, amount: a.balance });
+  });
+
+  // 3. Record to Retained Earnings (3003)
+  if (netIncome > 0) {
+    credits.push({ accountId: "3003", accountName: "累積盈餘", amount: netIncome });
+  } else {
+    debits.push({ accountId: "3003", accountName: "累積盈餘", amount: Math.abs(netIncome) });
+  }
+
+  return applyJournalToAccounts(debits, credits, accounts);
+}
+
 export function calculateIncomeStatement(accounts: Account[]) {
   const revenueAcc = accounts.find(a => a.id === "4001");
   const salariesAcc = accounts.find(a => a.id === "5001");
@@ -250,14 +288,14 @@ export function calculateBalanceSheet(accounts: Account[]) {
   const equityCapital2 = accounts.find(a => a.id === "3002")?.balance || 0;
   const equityCapital = (accounts.find(a => a.id === "3001")?.balance || 0) + equityCapital2;
 
-  // Let's dynamically calculate Retained Earnings as matches Net Profits from accounts.
-  // In dynamic ledger, current period Net Profit is basically sum of revenues minus sum of expenses.
-  const inc = calculateIncomeStatement(accounts);
-  const retainedEarnings = inc.netIncome;
+  // Use the balance in account 3003 plus current monthly net income if not closed yet
+  const closedRetainedEarnings = accounts.find(a => a.id === "3003")?.balance || 0;
+  const currentNetIncome = calculateIncomeStatement(accounts).netIncome;
+  const totalRetainedEarnings = closedRetainedEarnings + currentNetIncome;
 
   const totalAssets = cash + receivables + equipment;
   const totalLiabilities = payables + loans + bridgeLoans;
-  const totalEquity = equityCapital + retainedEarnings;
+  const totalEquity = equityCapital + totalRetainedEarnings;
 
   return {
     cash,
@@ -270,7 +308,7 @@ export function calculateBalanceSheet(accounts: Account[]) {
     cfoEquity: equityCapital2,
     totalLiabilities,
     equityCapital,
-    retainedEarnings,
+    retainedEarnings: totalRetainedEarnings,
     totalEquity
   };
 }

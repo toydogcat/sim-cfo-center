@@ -48,8 +48,9 @@ import {
   CartesianGrid
 } from 'recharts';
 
+import { GoogleGenAI } from '@google/genai';
 import { Account, BusinessEvent, JournalEntry, IndustryType, CFOReport } from './types';
-import { INITIAL_ACCOUNTS, postBusinessEvent, calculateIncomeStatement, calculateBalanceSheet } from './ledgerEngine';
+import { INITIAL_ACCOUNTS, postBusinessEvent, calculateIncomeStatement, calculateBalanceSheet, performClosingEntries } from './ledgerEngine';
 import { generateMonthlyEvents } from './transactionGenerator';
 import { generateHeuristicCFOReport } from './heuristicCfo';
 
@@ -59,6 +60,11 @@ export default function App() {
   const [industry, setIndustry] = useState<IndustryType>('SaaS');
   const [companyName, setCompanyName] = useState('');
   const [step, setStep] = useState(1); // Onboarding steps
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('GEMINI_API_KEY') || '');
+
+  useEffect(() => {
+    localStorage.setItem('GEMINI_API_KEY', apiKey);
+  }, [apiKey]);
 
   // Core Game Loop State
   const [month, setMonth] = useState(1);
@@ -380,7 +386,6 @@ export default function App() {
     });
 
     // 4. Update Game State
-    setAccounts(currentAccountsState);
     setEventsHistory(prev => [...prev, ...processedEvents]);
     setCurrentMonthEvents(processedEvents);
     setJournalEntriesHistory(prev => [...prev, ...newJournals]);
@@ -396,15 +401,18 @@ export default function App() {
       expenses: inc.totalExpense,
       netIncome: inc.netIncome
     };
-    const updatedSnapshots = [...snapshots, newSnapshot];
-    setSnapshots(updatedSnapshots);
+    setSnapshots(prev => [...prev, newSnapshot]);
+
+    // Period-end Closing: Reset Revenue/Expense and transfer to Retained Earnings
+    const closedAccounts = performClosingEntries(currentAccountsState);
+    setAccounts(closedAccounts);
 
     // Reset expanded transaction views
     setExpandedEventId(null);
     setSelectedAdviceIndex(null);
     setExecutedAdviceIds([]);
 
-    // Trigger CFO reporting
+    // Trigger CFO reporting (pass unclosed accounts for accurate diagnosis)
     requestCFOAdvice(currentAccountsState, processedEvents, nextMonthNum, industry);
   };
 
@@ -436,6 +444,39 @@ export default function App() {
       setCurrentMonthEvents(prev => [...prev, injectEvent]);
       setJournalEntriesHistory(prev => [...prev, journalEntry]);
       setCfoSavings(prev => prev - amount);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCompanyPayDividend = (amount: number) => {
+    const bs = calculateBalanceSheet(accounts);
+    if (bs.cash < amount) return;
+
+    const startYear = 2026;
+    const totalMonthsVal = month - 1;
+    const yearIdx = startYear + Math.floor(totalMonthsVal / 12);
+    const monthIdx = (totalMonthsVal % 12) + 1;
+    const monthStr = monthIdx < 10 ? `0${monthIdx}` : `${monthIdx}`;
+    const dateStr = `${yearIdx}-${monthStr}-28`;
+
+    const divEvent: BusinessEvent = {
+      id: `CORP-DIV-${Date.now()}`,
+      date: dateStr,
+      description: `【股東分紅】公司向股東 (CFO) 發放現金股利 $${amount.toLocaleString()} 元，由累積盈餘提存撥付。`,
+      amount,
+      eventType: 'Purchase', 
+      industrySpecific: false,
+      category: '股東分紅'
+    };
+
+    try {
+      const { journalEntry, updatedAccounts } = postBusinessEvent(divEvent, accounts);
+      setAccounts(updatedAccounts);
+      setEventsHistory(prev => [...prev, divEvent]);
+      setCurrentMonthEvents(prev => [...prev, divEvent]);
+      setJournalEntriesHistory(prev => [...prev, journalEntry]);
+      setCfoSavings(prev => prev + amount);
     } catch (err) {
       console.error(err);
     }
@@ -511,16 +552,95 @@ export default function App() {
     }
   };
 
-  // Call heuristic CFO engine for Remarks
-  const requestCFOAdvice = (
+  // Call CFO engine for Remarks (AI or Heuristic)
+  const requestCFOAdvice = async (
     currentAccounts: Account[],
     monthlyEvts: BusinessEvent[],
     monthNum: number,
     ind: IndustryType
   ) => {
     setCfoLoading(true);
+    setCfoError(false);
+
+    // 1. Priority 1: If API Key is provided, use Gemini 3.5 Flash directly in frontend
+    if (apiKey && apiKey.trim() !== '') {
+      try {
+        const genAI = new GoogleGenAI({ apiKey: apiKey });
+
+        const inc = calculateIncomeStatement(currentAccounts);
+        const bs = calculateBalanceSheet(currentAccounts);
+        const ledgerDoc = monthlyEvts.map((e: any) => `- [${e.date}] ${e.description} (${e.amount >= 0 ? '+' : ''}${e.amount}元, 類別: ${e.category})`).join('\n');
+
+        const systemInstructions = `你是一位資深的企業財務長 (CFO)，性格冷靜、敏銳、講求數據。
+你將分析玩家公司的當月財報與隨機事件。請根據這些數據給出精闢的分析：
+1. 診斷現金流與毛利率健康度。
+2. 指出潛在危機。
+3. 評估 warningStatus ('safe'、'warning' 或 'danger')。
+4. 提供 2-4 條務實、不打高空的行動建議 (advice)（繁體中文），並提供一個玩家在本回合可以執行的「suggestedAction」（可以為 null）。`;
+
+        const userPrompt = `
+公司名稱：${companyName}
+行業：${ind}
+當前回合：第 ${monthNum} 個月
+
+【損益表當月數字】
+- 主營業務收入：${inc.revenue} 元
+- 當月淨利潤：${inc.netIncome} 元
+
+【資產負債表當月餘額】
+- 現金：${bs.cash} 元
+- 應收帳款：${bs.receivables} 元
+- 總資產：${bs.totalAssets} 元
+- 總負債：${bs.totalLiabilities} 元
+- 總權益：${bs.totalEquity} 元
+
+【本月商業事件】
+${ledgerDoc}
+
+請產出 JSON 格式報告。`;
+
+        const result = await genAI.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: userPrompt,
+          config: {
+            responseMimeType: "application/json",
+            // @ts-ignore
+            responseSchema: {
+              type: "object",
+              properties: {
+                summary: { type: "string", description: "150字內精闢診斷" },
+                warningStatus: { type: "string", enum: ["safe", "warning", "danger"] },
+                advice: { type: "array", items: { type: "string" }, description: "2-4條建議" },
+                suggestedAction: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    title: { type: "string" },
+                    cost: { type: "number" },
+                    effect: { type: "string" }
+                  },
+                  required: ["id", "title", "cost", "effect"]
+                }
+              },
+              required: ["summary", "warningStatus", "advice"]
+            },
+            systemInstruction: systemInstructions
+          }
+        });
+
+        const text = result.text || "{}";
+        const report = JSON.parse(text);
+        
+        setCfoReport(report);
+        setCfoLoading(false);
+        return;
+      } catch (err) {
+        console.error("Gemini AI Diagnosis failed:", err);
+        // Fallback to heuristic on error
+      }
+    }
     
-    // Simulate a short processing delay for better UX
+    // 2. Priority 2: Fallback to local heuristic engine
     setTimeout(() => {
       try {
         const report = generateHeuristicCFOReport(ind, monthNum, currentAccounts, monthlyEvts);
@@ -894,6 +1014,22 @@ export default function App() {
                       onChange={(e) => setCompanyName(e.target.value)}
                       className="w-full bg-[#020617] border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-700 focus:outline-none focus:border-cyan-500 transition font-sans"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1 uppercase font-bold tracking-wider">
+                      Gemini API Key (選填 - 開啟 AI 智慧診斷)
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="在此貼上您的 API Key..."
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="w-full bg-[#020617] border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-700 focus:outline-none focus:border-cyan-500 transition font-sans"
+                    />
+                    <p className="text-[9px] text-slate-500 mt-1 italic">
+                      * 密鑰將儲存在本地瀏覽器 (LocalStorage)。不填寫則預設使用專家規則引擎。
+                    </p>
                   </div>
 
                   <div id="first-block-regulation" className="p-3.5 rounded bg-slate-900/30 border border-slate-800 text-[11px] text-slate-400 space-y-1.5 leading-relaxed font-sans">
@@ -2027,6 +2163,46 @@ export default function App() {
                           );
                         })()}
 
+                        {/* Intercompany Fund Transfer Section */}
+                        <div className="p-4 bg-slate-900/30 border border-slate-850 rounded-xl space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-xs text-slate-300 flex items-center gap-1.5 font-mono">
+                              <ArrowDownRight className="w-4 h-4 text-emerald-400" />
+                              公司與個人資金雙向調度 (Intercompany)
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <span className="text-[9px] font-mono text-slate-500 uppercase block">從公司提撥 (Dividend / Pay)</span>
+                              <button
+                                disabled={balanceSheet.cash < 50000}
+                                onClick={() => {
+                                  // Simplified dividend: Direct cash transfer
+                                  // In real accounting, this involves Retained Earnings (Debit) and Cash (Credit)
+                                  // We'll simulate this via a custom event later or direct balance adjustment for now
+                                  // But wait, it's better to use a postBusinessEvent if possible
+                                  handleCompanyPayDividend(50000);
+                                }}
+                                className="w-full bg-emerald-950 hover:bg-emerald-900 text-emerald-400 font-bold py-2 px-2 rounded font-mono text-[10px] cursor-pointer text-center border border-emerald-800/40 disabled:opacity-30"
+                              >
+                                💰 領取股東分紅 $50,000
+                              </button>
+                            </div>
+
+                            <div className="space-y-2">
+                              <span className="text-[9px] font-mono text-slate-500 uppercase block">注資公司 (Capital / Loan)</span>
+                              <button
+                                disabled={cfoSavings < 50000}
+                                onClick={() => handleCfoInjectEquity(50000)}
+                                className="w-full bg-cyan-950 hover:bg-cyan-900 text-cyan-400 font-bold py-2 px-2 rounded font-mono text-[10px] cursor-pointer text-center border border-cyan-800/40 disabled:opacity-30"
+                              >
+                                🛡️ 緊急注資公司 $50,000
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
                         {/* Middle Action: Personal Investments & Assets Portfolio */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           
@@ -2168,9 +2344,21 @@ export default function App() {
 
                                     <div>
                                       {isOwned ? (
-                                        <span className="inline-flex px-2 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold font-mono">
-                                          已購置 🏢
-                                        </span>
+                                        <div className="flex flex-col gap-1.5 items-end">
+                                          <span className="inline-flex px-2 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold font-mono">
+                                            已購置 🏢
+                                          </span>
+                                          <button
+                                            onClick={() => {
+                                              const sellPrice = Math.round(house.price * 0.7);
+                                              setCfoSavings(prev => prev + sellPrice);
+                                              setOwnedProperties(prev => prev.filter(k => k !== house.key));
+                                            }}
+                                            className="text-[9px] font-mono text-rose-400 hover:text-rose-300 underline cursor-pointer"
+                                          >
+                                            緊急變現 (7折)
+                                          </button>
+                                        </div>
                                       ) : (
                                         <button
                                           disabled={cfoSavings < house.price}

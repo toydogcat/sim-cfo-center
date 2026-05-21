@@ -1,4 +1,4 @@
-import { BusinessEvent } from './types';
+import { BusinessEvent, IndustryType } from './types';
 
 export interface RandomEventTemplate {
   id: string;
@@ -7,7 +7,7 @@ export interface RandomEventTemplate {
   eventType: BusinessEvent['eventType'];
   category: string;
   probability: number;
-  industry: 'SaaS' | 'Construction' | 'Both';
+  industry: IndustryType | 'Both';
 }
 
 export const RANDOM_EVENTS: RandomEventTemplate[] = [
