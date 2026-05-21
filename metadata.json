@@ -1,0 +1,8 @@
+{
+  "name": "AI CFO 財務模擬戰情室",
+  "description": "基於複式簿記總帳引擎與大模型構建的 AI 企業運營與財務決策沙盒模擬器。體驗真實資產負債表管理與 CFO 危機解救！",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
